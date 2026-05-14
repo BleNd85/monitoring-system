@@ -1,0 +1,19 @@
+services:
+  agent:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "${PORT:-8000}:${PORT:-8000}"
+    environment:
+      AGENT_ID: ${AGENT_ID:-unknown-agent}
+      AGENT_HOST: ${AGENT_HOST:-localhost}
+      API_V1_STR: ${API_V1_STR:-/api/v1}
+      PORT: ${PORT:-8000}
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    pid: "host"
+    privileged: false
+    cap_add:
+      - SYS_PTRACE
