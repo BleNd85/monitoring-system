@@ -1,0 +1,1 @@
+** Client-server system for intelligent monitoring and analysis of the state of server applications based on system metrics.
