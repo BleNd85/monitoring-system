@@ -1,6 +1,9 @@
+import docker
+import logging
 from app.service.container.base import BaseContainerCollector
 from app.models.metrics_schema import ContainerMetrics
-import docker
+
+logger = logging.getLogger(__name__)
 
 
 class DockerContainerCollector(BaseContainerCollector):
@@ -35,6 +38,7 @@ class DockerContainerCollector(BaseContainerCollector):
                         status=container.status,
                     )
                 )
-                return containers
-        except Exception:
+            return containers
+        except Exception as e:
+            logger.error(f"Failed to collect container metrics: {e}")
             return []
