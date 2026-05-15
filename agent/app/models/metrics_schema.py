@@ -4,9 +4,9 @@ from datetime import datetime
 
 class CPUMetrics(BaseModel):
     load_percent: float = Field(..., ge=0, le=100)
-    load_avg_1m: float = Field(..., ge=0, le=100)
-    load_avg_5m: float = Field(..., ge=0, le=100)
-    load_avg_15m: float = Field(..., ge=0, le=100)
+    load_avg_1m: float = Field(..., ge=0)
+    load_avg_5m: float = Field(..., ge=0)
+    load_avg_15m: float = Field(..., ge=0)
 
 
 class MemoryMetrics(BaseModel):
