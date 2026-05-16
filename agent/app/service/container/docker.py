@@ -38,7 +38,7 @@ class DockerContainerCollector(BaseContainerCollector):
             )
 
         except Exception as e:
-            logger.warning(f"Skipping container {container.name}: {e}")
+            logger.warning("Skipping container %s: %s", container.name, e)
             return None
 
     def collect(self):
@@ -51,5 +51,5 @@ class DockerContainerCollector(BaseContainerCollector):
 
             return [r for r in results if r is not None]
         except Exception as e:
-            logger.error(f"Failed to collect container metrics: {e}")
+            logger.error("Failed to collect container metrics: %s", e)
             return []
