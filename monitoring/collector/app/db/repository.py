@@ -1,5 +1,7 @@
 import logging
+from datetime import datetime
 from app.db.database import AsyncSessionLocal, MetricsRecord, ContainerRecord
+from sqlalchemy import select, desc
 from app.models.metrics_schema import MetricsSnapshot
 
 logger = logging.getLogger(__name__)
@@ -44,3 +46,109 @@ async def save_snapshot(snapshot: MetricsSnapshot):
             await session.rollback()
             logger.error("Failed to save snapshot: %s", e)
             raise
+
+
+async def get_latest_snapshot(agent_id: str) -> dict | None:
+    try:
+        async with AsyncSessionLocal() as session:
+            result = await session.execute(
+                select(MetricsRecord)
+                .where(MetricsRecord.agent_id == agent_id)
+                .order_by(desc(MetricsRecord.time))
+                .limit(1)
+            )
+            record = result.scalar_one_or_none()
+            if not record:
+                logger.warning("No snapshot found for agent: %s", agent_id)
+                return None
+
+            containers_result = await session.execute(
+                select(ContainerRecord).where(
+                    ContainerRecord.agent_id == agent_id,
+                    ContainerRecord.time == record.time,
+                )
+            )
+            containers = list(containers_result.scalars().all())
+
+            return _build_snapshot(record, containers)
+    except Exception as e:
+        logger.error(
+            "Failed to fetch latest snapshot for agent %s: %s",
+            agent_id,
+            e,
+        )
+        raise
+
+
+async def get_snapshot_range(
+    agent_id: str,
+    start: datetime,
+    end: datetime,
+) -> list[dict]:
+    async with AsyncSessionLocal() as session:
+        metrics_result = await session.execute(
+            select(MetricsRecord)
+            .where(
+                MetricsRecord.agent_id == agent_id,
+                MetricsRecord.time >= start,
+                MetricsRecord.time <= end,
+            )
+            .order_by(MetricsRecord.time)
+        )
+        records = list(metrics_result.scalars().all())
+        if not records:
+            return []
+
+        timestamps = [r.time for r in records]
+        containers_result = await session.execute(
+            select(ContainerRecord)
+            .where(
+                ContainerRecord.agent_id == agent_id,
+                ContainerRecord.time.in_(timestamps),
+            )
+            .order_by(ContainerRecord.time)
+        )
+        all_containers = list(containers_result.scalars().all())
+
+        containers_by_time = {}
+        for c in all_containers:
+            containers_by_time.setdefault(c.time, []).append(c)
+
+        return [_build_snapshot(r, containers_by_time.get(r.time, [])) for r in records]
+
+
+def _build_snapshot(record: MetricsRecord, containers: list) -> dict:
+    return {
+        "agent_id": record.agent_id,
+        "timestamp": record.time,
+        "cpu": {
+            "load_percent": record.cpu_load_percent,
+            "load_avg_1m": record.load_avg_1m,
+            "load_avg_5m": record.load_avg_5m,
+            "load_avg_15m": record.load_avg_15m,
+        },
+        "memory": {
+            "ram_percent": record.ram_percent,
+            "ram_usage_mb": record.ram_usage_mb,
+            "swap_percent": record.swap_percent,
+            "swap_usage_mb": record.swap_usage_mb,
+        },
+        "disk": {
+            "read_bytes": record.disk_read_bytes,
+            "write_bytes": record.disk_write_bytes,
+        },
+        "network": {
+            "sent_bytes": record.net_sent_bytes,
+            "received_bytes": record.net_received_bytes,
+        },
+        "containers": [
+            {
+                "name": c.name,
+                "cpu_load_percent": c.cpu_load_percent,
+                "ram_usage_mb": c.ram_usage_mb,
+                "ram_limit_mb": c.ram_limit_mb,
+                "status": c.status,
+            }
+            for c in containers
+        ],
+    }

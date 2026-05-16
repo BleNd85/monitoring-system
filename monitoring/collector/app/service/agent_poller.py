@@ -10,14 +10,14 @@ logger = logging.getLogger(__name__)
 
 client = httpx.AsyncClient(timeout=settings.AGENT_TIMEOUT)
 
-
+#TODO fix agent id
 async def poll_agent(agent) -> None:
     try:
         response = await client.get(
             f"{agent.url}/api/v1/metrics",
         )
         response.raise_for_status()
-        snapshot = MetricsSnapshot(**response.json)
+        snapshot = MetricsSnapshot(**response.json())
         await save_snapshot(snapshot)
     except httpx.TimeoutException:
         logger.error("Agent %s timeout", agent.agent_id)
