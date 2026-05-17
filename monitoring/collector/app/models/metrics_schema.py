@@ -59,6 +59,5 @@ class AgentInfo(BaseModel):
 
 
 class AgentRegisterRequest(BaseModel):
-    agent_id: str = Field(..., min_length=1)
     url: str = Field(..., min_length=1)
     name: str = Field(..., min_length=1)

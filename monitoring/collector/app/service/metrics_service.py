@@ -13,4 +13,4 @@ async def get_latest(agent_id: str):
 async def get_range(agent_id: str, start: datetime, end: datetime):
     if start >= end:
         raise HTTPException(400, "start must be before end")
-    return await repository.get_snapshots_range(agent_id, start, end)
+    return await repository.get_snapshot_range(agent_id, start, end)

@@ -1,34 +1,36 @@
 from fastapi import APIRouter, HTTPException, Query
 from datetime import datetime
-from app.service import service as metrics_service
+from app.service import metrics_service
 from app.models.metrics_schema import AgentInfo, AgentRegisterRequest
-from app.service.agent_registry import agent_registry
+from app.service import agent_service
 
 router = APIRouter()
 
 
 @router.get("/agents", response_model=list[AgentInfo])
 async def get_all():
-    return agent_registry.get_all()
+    return await agent_service.get_all()
+
+
+@router.get("/agents/{agent_id}", response_model=AgentInfo)
+async def get_agent_by_id(agent_id: str):
+    return await agent_service.get_by_id(agent_id)
 
 
 @router.post("/agents", response_model=AgentInfo)
 async def add(request: AgentRegisterRequest):
-    agent = AgentInfo(agent_id=request.agent_id, url=request.url, name=request.name)
-    agent_registry.add(agent)
-    return agent
+    return await agent_service.register(request)
 
 
 @router.delete("/agents/{agent_id}")
-async def remove(agent_id: str):
-    if not agent_registry.remove(agent_id):
-        raise HTTPException(status_code=404, detail="Agent not found")
+async def delete_by_id(agent_id: str):
+    await agent_service.remove_by_id(agent_id)
     return {"status": "ok"}
 
 
 @router.get("/health")
 async def health():
-    return {"status": "ok", "agents": agent_registry.count()}
+    return await agent_service.health()
 
 
 @router.get("/metrics/{agent_id}/latest")

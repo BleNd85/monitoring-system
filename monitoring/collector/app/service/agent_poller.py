@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 client = httpx.AsyncClient(timeout=settings.AGENT_TIMEOUT)
 
-#TODO fix agent id
+
 async def poll_agent(agent) -> None:
     try:
         response = await client.get(

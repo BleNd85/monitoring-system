@@ -1,10 +1,68 @@
 import logging
-from datetime import datetime
-from app.db.database import AsyncSessionLocal, MetricsRecord, ContainerRecord
+from datetime import datetime, timezone
+from app.db.database import (
+    AsyncSessionLocal,
+    MetricsRecord,
+    ContainerRecord,
+    AgentRecord,
+)
 from sqlalchemy import select, desc
-from app.models.metrics_schema import MetricsSnapshot
+from app.models.metrics_schema import MetricsSnapshot, AgentInfo
 
 logger = logging.getLogger(__name__)
+
+
+async def save_agent(agent: AgentInfo) -> None:
+    async with AsyncSessionLocal() as session:
+        try:
+            existing = await session.get(AgentRecord, agent.agent_id)
+            if existing:
+                existing.url = agent.url
+                existing.name = agent.name
+            else:
+                record = AgentRecord(
+                    agent_id=agent.agent_id,
+                    url=agent.url,
+                    name=agent.name,
+                    registered_at=datetime.now(timezone.utc),
+                )
+                session.add(record)
+            await session.commit()
+            logger.info("Saved agent: %s", agent.agent_id)
+        except Exception as e:
+            await session.rollback()
+            logger.error("Failed to save agent: %s", e)
+
+
+async def delete_agent(agent_id: str) -> bool:
+    async with AsyncSessionLocal() as session:
+        try:
+            record = await session.get(AgentRecord, agent_id)
+            if not record:
+                return False
+            await session.delete(record)
+            await session.commit()
+            logger.info("Deleted agent: %s", agent_id)
+            return True
+        except Exception as e:
+            await session.rollback()
+            logger.error("Failed to delete agent: %s", e)
+            raise
+
+
+async def get_all_agents() -> list[AgentInfo]:
+    async with AsyncSessionLocal() as session:
+        result = await session.execute(select(AgentRecord))
+        records = list(result.scalars().all())
+        return [AgentInfo(agent_id=r.agent_id, url=r.url, name=r.name) for r in records]
+
+
+async def get_agent(agent_id: str) -> AgentInfo | None:
+    async with AsyncSessionLocal() as session:
+        record = await session.get(AgentRecord, agent_id)
+        if not record:
+            return None
+        return AgentInfo(agent_id=record.agent_id, url=record.url, name=record.name)
 
 
 async def save_snapshot(snapshot: MetricsSnapshot):

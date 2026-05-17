@@ -13,6 +13,14 @@ class Base(DeclarativeBase):
     pass
 
 
+class AgentRecord(Base):
+    __tablename__ = "agents"
+    agent_id = Column(String, primary_key=True)
+    url = Column(String, nullable=False)
+    name = Column(String, nullable=False)
+    registered_at = Column(TIMESTAMP(timezone=True), nullable=False)
+
+
 class MetricsRecord(Base):
     __tablename__ = "metrics"
     time = Column(TIMESTAMP(timezone=True), primary_key=True)
