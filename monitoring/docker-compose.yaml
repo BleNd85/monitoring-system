@@ -38,5 +38,39 @@ services:
       timeout: 5s
       retries: 3
 
+  postgresql:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-monitoring}
+    volumes:
+      - postgresql_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  alerter:
+    build: ./alerter
+    restart: unless-stopped
+    env_file: ./alerter/.env
+    ports:
+      - "8002:8002"
+    depends_on:
+      postgresql:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/api/v1/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
 volumes:
+  postgresql_data:
   timescaledb_data:
+
