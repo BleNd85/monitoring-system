@@ -11,7 +11,7 @@ class AnomalyDetected(BaseModel):
     affected_metrics: dict = Field(...)
     expected_values: dict = Field(default_factory=dict)
     actual_values: dict = Field(default_factory=dict)
-    deviation_score: float = Field(..., ge=0.0, le=0.0)
+    deviation_score: float = Field(..., ge=0.0, le=1.0)
     llm_interpretation: str | None = None
 
 
