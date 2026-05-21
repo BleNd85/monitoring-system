@@ -3,7 +3,7 @@ services:
     build: .
     restart: unless-stopped
     ports:
-      - "${PORT:-8000}:${PORT:-8000}"
+      - "${PORT:-8200}:${PORT:-8200}"
     environment:
       AGENT_ID: ${AGENT_ID:-unknown-agent}
       AGENT_HOST: ${AGENT_HOST:-localhost}
