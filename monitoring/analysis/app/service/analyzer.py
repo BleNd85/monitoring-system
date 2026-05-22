@@ -177,6 +177,7 @@ async def analyze(agent_id: str, snapshot: MetricsSnapshot) -> bool:
     if xgb:
         X_xgb = build_xgb_vector(raw_features, X_dev)
         xgb_pred = int(xgb.predict(X_xgb)[0])
+        logger.info("XGBoost prediction for agent %s: %d", agent_id, xgb_pred)
         if xgb_pred == 0:
             logger.debug(
                 "XGBoost overrode IF for agent %s: score=%.2f → normal",

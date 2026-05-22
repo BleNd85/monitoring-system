@@ -13,7 +13,7 @@ async def warmup() -> None:
                 json={
                     "model": settings.OLLAMA_MODEL,
                     "prompt": "",
-                    "keep_alive": "1m",
+                    "keep_alive": "-1",
                 },
             )
             response.raise_for_status()
@@ -31,53 +31,58 @@ async def interpret(
     deviation_score: float,
     containers: list[dict],
 ) -> str | None:
-    prompt = f"""You are a senior DevOps engineer. Analyze this server anomaly and respond ONLY in English.
+    severity_hint = (
+        "CRITICAL — immediate action required"
+        if deviation_score >= settings.ANOMALY_THRESHOLD_CRITICAL
+        else "WARNING — investigation required"
+    )
 
-Agent: {agent_id}
-Anomaly type: {anomaly_type}
-Deviation score: {deviation_score:.2f}
+    prompt = f"""You are a senior DevOps/SRE engineer performing root cause analysis.
+        Respond ONLY in English. Be precise and concise.
 
-Pipeline context:
-- Prophet defines expected seasonal baseline (normal behavior model)
-- Deviation vector = actual - Prophet expected values
-- Isolation Forest detects anomaly in multivariate deviation space
-- XGBoost confirms severity class (0 = normal, 1 = warning, 2 = critical)
-- This analysis is performed AFTER detection, not during real-time monitoring
-Important:
-- If there is conflict between Baseline and Current, ALWAYS trust Current as ground truth.
-- Affected metrics contain only the most anomaly-contributing features.
-Baseline (expected from Prophet): {expected_values}
-Current (actual): {actual_values}
-Affected metrics: {affected_metrics}
+        === ANOMALY REPORT ===
+        Agent: {agent_id}
+        Detected anomaly type: {anomaly_type}
+        Severity: {severity_hint} (score={deviation_score:.2f})
 
-Containers list: {containers}
+        === METRICS ===
+        Baseline (Prophet seasonal forecast):
+        {expected_values}
 
-Context:
-Linux server running Docker containers (SpringBoot services, PostgreSQL).
-disk_read_bytes/disk_write_bytes/net_sent_bytes/net_received_bytes are per-interval deltas.
+        Actual (current values):
+        {actual_values}
 
-Instructions:
-- Pick ONE most likely root cause.
-- Do NOT list multiple hypotheses.
-- Use pipeline context when reasoning.
-- Suggest few concrete investigation commands.
-- If deviation_score >= 0.9 → treat as critical incident.
+        Affected metrics (deviated most from baseline):
+        {affected_metrics}
 
-Format:
-Root cause: <one cause>
-Explanation:
-<1-3 sentences>
-Evidence:
-<1-3 sentences>
-Rejected alternatives:
-<1-2 sentences>
-Action:
-<1-5 commands>
-Monitoring:
-<one metric>"""
+        Running containers:
+        {containers}
+
+        === CONTEXT ===
+        - Linux server with Docker containers (web apps, PostgreSQL).
+        - disk_read_bytes / disk_write_bytes / net_sent_bytes / net_received_bytes are per-poll-interval deltas (not cumulative).
+        - Anomaly type "{anomaly_type}" was determined by rule-based logic AFTER ML detection.
+        - Focus your analysis on the anomaly type and affected metrics listed above.
+        - Do NOT speculate about metrics that are NOT in "Affected metrics".
+
+        === INSTRUCTIONS ===
+        1. Root cause MUST match the anomaly type: "{anomaly_type}".
+        2. Base your reasoning on "Affected metrics" only and {anomaly_type} is a main priority.
+        3. ONE root cause. No alternatives in main analysis.
+        4. Suggest 1-3 concrete Linux/Docker investigation commands relevant to "{anomaly_type}".
+        5. If deviation_score >= {settings.ANOMALY_THRESHOLD_CRITICAL:.2f} → treat as confirmed incident.
+
+        === OUTPUT FORMAT (follow exactly) ===
+        Root cause: <one specific cause matching anomaly type "{anomaly_type}">
+        Evidence: <1-2 sentences using only affected metrics data>
+        Action:
+        <command 1>
+        <command 2 if needed>
+        <command 3 if needed>
+        Rejected alternatives: <one sentence on why other causes are less likely>"""
 
     try:
-        async with httpx.AsyncClient(timeout=60) as client:
+        async with httpx.AsyncClient(timeout=180) as client:
             response = await client.post(
                 f"{settings.OLLAMA_URL}/api/generate",
                 json={
@@ -85,8 +90,8 @@ Monitoring:
                     "prompt": prompt,
                     "stream": False,
                     "options": {
-                        "temperature": 0.3,
-                        "num_predict": 500,
+                        "temperature": 0.2,
+                        "num_predict": 400,
                     },
                 },
             )
