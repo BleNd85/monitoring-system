@@ -43,10 +43,14 @@ async def run_training(agent_id: str) -> None:
     snapshots = await collector_client.get_range(agent_id, start, now)
     if not snapshots:
         logger.warning("No data for training agent %s", agent_id)
+        _last_training[agent_id] = now
         return
     success = await trainer.train(agent_id, snapshots)
-    if success:
-        _last_training[agent_id] = now
+    _last_training[agent_id] = now
+    if not success:
+        logger.warning(
+            "Training failed or skipped for agent %s, will retry in 23h", agent_id
+        )
 
 
 async def run_analysis(agent_id: str) -> None:

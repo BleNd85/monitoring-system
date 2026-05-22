@@ -94,12 +94,8 @@ def build_xgb_vector(raw_features: dict, deviation_vector: np.ndarray) -> np.nda
     return np.concatenate([deviation_vector, extra], axis=1)
 
 
-def normalize_score(raw_score: float, bounds: dict) -> float:
-    score_min = bounds.get("min", -0.5)
-    score_max = bounds.get("max", 0.5)
-    if score_max == score_min:
-        return 0.0
-    normalized = 1.0 - (raw_score - score_min) / (score_max - score_min)
+def normalize_score(raw_score: float) -> float:
+    normalized = (0.5 - raw_score) / 1.0
     return float(max(0.0, min(1.0, normalized)))
 
 
@@ -149,8 +145,7 @@ async def analyze(agent_id: str, snapshot: MetricsSnapshot) -> bool:
     X_dev = build_deviation_vector(raw_features, expected)
 
     raw_score = float(iso_forest.decision_function(X_dev)[0])
-    bounds = model_manager.load_model(agent_id, "if_score_bounds") or {}
-    normalized = normalize_score(raw_score, bounds)
+    normalized = normalize_score(raw_score)
 
     logger.info(
         "IF score for agent %s: raw=%.4f normalized=%.4f",
@@ -198,6 +193,13 @@ async def analyze(agent_id: str, snapshot: MetricsSnapshot) -> bool:
         containers=snapshot.containers,
     )
 
+    if not interpretation:
+        interpretation = (
+            f"LLM unavailable. Anomaly: {anomaly_type}, "
+            f"score={normalized:.2f}, severity={severity}. "
+            f"Affected metrics: {list(affected.keys())}"
+        )
+
     anomaly = AnomalyDetected(
         agent_id=agent_id,
         timestamp=snapshot.timestamp,
@@ -234,8 +236,7 @@ async def analyze_silent(agent_id: str, snapshot: MetricsSnapshot) -> None:
     X_dev = build_deviation_vector(raw_features, expected)
 
     raw_score = float(iso_forest.decision_function(X_dev)[0])
-    bounds = model_manager.load_model(agent_id, "if_score_bounds") or {}
-    normalized = normalize_score(raw_score, bounds)
+    normalized = normalize_score(raw_score)
 
     if normalized >= settings.ANOMALY_THRESHOLD_WARNING:
         logger.debug(
