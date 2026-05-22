@@ -13,7 +13,7 @@ async def warmup() -> None:
                 json={
                     "model": settings.OLLAMA_MODEL,
                     "prompt": "",
-                    "keep_alive": "10m",
+                    "keep_alive": "1m",
                 },
             )
             response.raise_for_status()

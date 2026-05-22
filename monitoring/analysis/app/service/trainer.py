@@ -140,9 +140,6 @@ async def train(
     agent_id: str,
     snapshots: list[MetricsSnapshot],
 ) -> bool:
-
-    model_manager.invalidate_cache(agent_id)
-
     if len(snapshots) < settings.MIN_TRAINING_SAMPLES:
         logger.warning(
             "Not enough samples for agent %s: %d < %d",
@@ -281,6 +278,7 @@ async def train(
                 len(X_labeled_full),
             )
 
+        model_manager.invalidate_cache(agent_id)
         logger.info(
             "Training complete for agent %s",
             agent_id,

@@ -29,6 +29,15 @@ DEVIATION_FEATURES = [
     "swap_percent",
 ]
 
+AFFECTED_THRESHOLDS = {
+    "cpu_load_percent": 10,
+    "ram_percent": 10,
+    "disk_read_bytes": 1_000_000,
+    "disk_write_bytes": 1_000_000,
+    "net_sent_bytes": 500_000,
+    "net_received_bytes": 500_000,
+}
+
 
 def snapshot_to_raw_features(snapshot: MetricsSnapshot) -> dict:
     return {
@@ -48,13 +57,11 @@ def get_expected_values(agent_id: str, timestamp: datetime) -> dict:
     naive_ts = timestamp.replace(tzinfo=None)
     future = pd.DataFrame({"ds": [naive_ts]})
     expected = {}
-
     for col in PROPHET_TARGETS:
         model = model_manager.load_model(agent_id, f"prophet_{col}")
         if model:
             forecast = model.predict(future)
             expected[col] = round(float(forecast["yhat"].iloc[0]), 4)
-
     return expected
 
 
@@ -94,8 +101,12 @@ def build_xgb_vector(raw_features: dict, deviation_vector: np.ndarray) -> np.nda
     return np.concatenate([deviation_vector, extra], axis=1)
 
 
-def normalize_score(raw_score: float) -> float:
-    normalized = (0.5 - raw_score) / 1.0
+def normalize_score(raw_score: float, bounds: dict) -> float:
+    score_min = bounds.get("min", -0.5)
+    score_max = bounds.get("max", 0.5)
+    if score_max == score_min:
+        return 0.0
+    normalized = 1.0 - (raw_score - score_min) / (score_max - score_min)
     return float(max(0.0, min(1.0, normalized)))
 
 
@@ -145,7 +156,8 @@ async def analyze(agent_id: str, snapshot: MetricsSnapshot) -> bool:
     X_dev = build_deviation_vector(raw_features, expected)
 
     raw_score = float(iso_forest.decision_function(X_dev)[0])
-    normalized = normalize_score(raw_score)
+    bounds = model_manager.load_model(agent_id, "if_score_bounds") or {}
+    normalized = normalize_score(raw_score, bounds)
 
     logger.info(
         "IF score for agent %s: raw=%.4f normalized=%.4f",
@@ -166,22 +178,30 @@ async def analyze(agent_id: str, snapshot: MetricsSnapshot) -> bool:
         X_xgb = build_xgb_vector(raw_features, X_dev)
         xgb_pred = int(xgb.predict(X_xgb)[0])
         if xgb_pred == 0:
+            logger.debug(
+                "XGBoost overrode IF for agent %s: score=%.2f → normal",
+                agent_id,
+                normalized,
+            )
             return False
         severity = "critical" if xgb_pred == 2 else "warning"
 
     anomaly_type = determine_anomaly_type(raw_features, expected)
+
     affected = {
         k: raw_features[k]
-        for k in [
-            "cpu_load_percent",
-            "ram_percent",
-            "disk_read_bytes",
-            "disk_write_bytes",
-            "net_sent_bytes",
-            "net_received_bytes",
-        ]
-        if k in expected and abs(raw_features[k] - expected[k]) > 10
+        for k, threshold in AFFECTED_THRESHOLDS.items()
+        if k in expected and abs(raw_features[k] - expected[k]) > threshold
     } or raw_features
+
+    containers_summary = (
+        [
+            {"name": c.get("name"), "status": c.get("status")}
+            for c in snapshot.containers
+        ]
+        if snapshot.containers
+        else []
+    )
 
     interpretation = await llm_service.interpret(
         agent_id=agent_id,
@@ -190,14 +210,14 @@ async def analyze(agent_id: str, snapshot: MetricsSnapshot) -> bool:
         expected_values=expected,
         actual_values=raw_features,
         deviation_score=normalized,
-        containers=snapshot.containers,
+        containers=containers_summary,
     )
 
     if not interpretation:
         interpretation = (
             f"LLM unavailable. Anomaly: {anomaly_type}, "
             f"score={normalized:.2f}, severity={severity}. "
-            f"Affected metrics: {list(affected.keys())}"
+            f"Affected: {list(affected.keys())}"
         )
 
     anomaly = AnomalyDetected(
@@ -236,7 +256,8 @@ async def analyze_silent(agent_id: str, snapshot: MetricsSnapshot) -> None:
     X_dev = build_deviation_vector(raw_features, expected)
 
     raw_score = float(iso_forest.decision_function(X_dev)[0])
-    normalized = normalize_score(raw_score)
+    bounds = model_manager.load_model(agent_id, "if_score_bounds") or {}
+    normalized = normalize_score(raw_score, bounds)
 
     if normalized >= settings.ANOMALY_THRESHOLD_WARNING:
         logger.debug(
