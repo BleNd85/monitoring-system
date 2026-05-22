@@ -195,6 +195,7 @@ async def analyze(agent_id: str, snapshot: MetricsSnapshot) -> bool:
         expected_values=expected,
         actual_values=raw_features,
         deviation_score=normalized,
+        containers=snapshot.containers,
     )
 
     anomaly = AnomalyDetected(

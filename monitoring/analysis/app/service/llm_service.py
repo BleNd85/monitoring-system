@@ -22,7 +22,6 @@ async def warmup() -> None:
         logger.warning("Ollama warmup failed: %s", e)
 
 
-# TODO change prompt
 async def interpret(
     agent_id: str,
     anomaly_type: str,
@@ -30,6 +29,7 @@ async def interpret(
     expected_values: dict,
     actual_values: dict,
     deviation_score: float,
+    containers: list[dict],
 ) -> str | None:
     prompt = f"""You are a senior DevOps engineer. Analyze this server anomaly and respond ONLY in English.
 
@@ -37,24 +37,44 @@ Agent: {agent_id}
 Anomaly type: {anomaly_type}
 Deviation score: {deviation_score:.2f}
 
-Baseline (expected): {expected_values}
+Pipeline context:
+- Prophet defines expected seasonal baseline (normal behavior model)
+- Deviation vector = actual - Prophet expected values
+- Isolation Forest detects anomaly in multivariate deviation space
+- XGBoost confirms severity class (0 = normal, 1 = warning, 2 = critical)
+- This analysis is performed AFTER detection, not during real-time monitoring
+Important:
+- If there is conflict between Baseline and Current, ALWAYS trust Current as ground truth.
+- Affected metrics contain only the most anomaly-contributing features.
+Baseline (expected from Prophet): {expected_values}
 Current (actual): {actual_values}
 Affected metrics: {affected_metrics}
 
-Context: Linux server running Docker containers (SpringBoot services, PostgreSQL).
-Metrics disk_read_bytes/disk_write_bytes/net_sent_bytes/net_received_bytes are cumulative since boot — a sharp drop means restart, not anomaly.
+Containers list: {containers}
+
+Context:
+Linux server running Docker containers (SpringBoot services, PostgreSQL).
+disk_read_bytes/disk_write_bytes/net_sent_bytes/net_received_bytes are per-interval deltas.
 
 Instructions:
-- Pick ONE most likely root cause based on which specific metrics deviated most from baseline.
-- Do NOT list all possible causes — commit to the most probable one given the data.
-- Suggest ONE concrete investigation command using docker logs, docker stats, or standard Linux tools.
-- If deviation_score >= 0.9, treat as confirmed anomaly requiring immediate action.
-- If deviation_score < 0.7, suggest passive monitoring only.
-- Max 3 sentences total.
+- Pick ONE most likely root cause.
+- Do NOT list multiple hypotheses.
+- Use pipeline context when reasoning.
+- Suggest few concrete investigation commands.
+- If deviation_score >= 0.9 → treat as critical incident.
 
 Format:
-Root cause: <one specific cause>
-Action: <one concrete command>"""
+Root cause: <one cause>
+Explanation:
+<1-3 sentences>
+Evidence:
+<1-3 sentences>
+Rejected alternatives:
+<1-2 sentences>
+Action:
+<1-5 commands>
+Monitoring:
+<one metric>"""
 
     try:
         async with httpx.AsyncClient(timeout=60) as client:
