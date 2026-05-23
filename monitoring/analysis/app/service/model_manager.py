@@ -1,4 +1,3 @@
-import os
 import pickle
 import logging
 from pathlib import Path
