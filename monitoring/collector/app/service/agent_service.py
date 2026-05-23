@@ -39,7 +39,7 @@ async def register(request: AgentRegisterRequest) -> AgentInfo:
     )
     await repository.save_agent(agent)
     agent_registry.add(agent)
-    logger.info("Agent registerd: %s", agent.agent_id)
+    logger.info("Agent registered: %s", agent.agent_id)
     return agent
 
 
