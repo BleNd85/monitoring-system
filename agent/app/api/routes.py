@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.models.metrics_schema import HostInfo, MetricsSnapshot
+from app.model.metrics_schema import HostInfo, MetricsSnapshot
 import app.service.metrics_service as service
 
 router = APIRouter()

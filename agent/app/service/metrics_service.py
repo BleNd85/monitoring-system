@@ -3,7 +3,7 @@ import platform
 from datetime import datetime, timezone
 from app.core.config import settings
 from app.service.container.docker import DockerContainerCollector
-from app.models.metrics_schema import (
+from app.model.metrics_schema import (
     MetricsSnapshot,
     HostInfo,
     NetworkMetrics,

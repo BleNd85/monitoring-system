@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from app.models.metrics_schema import ContainerMetrics
+from app.model.metrics_schema import ContainerMetrics
 
 
 class BaseContainerCollector(ABC):

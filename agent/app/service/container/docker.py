@@ -2,7 +2,7 @@ import docker
 import logging
 from concurrent.futures import ThreadPoolExecutor
 from app.service.container.base import BaseContainerCollector
-from app.models.metrics_schema import ContainerMetrics
+from app.model.metrics_schema import ContainerMetrics
 
 logger = logging.getLogger(__name__)
 
