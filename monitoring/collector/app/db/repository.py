@@ -7,7 +7,7 @@ from app.db.database import (
     AgentRecord,
 )
 from sqlalchemy import select, desc
-from app.models.metrics_schema import MetricsSnapshot, AgentInfo
+from app.model.metrics_schema import MetricsSnapshot, AgentInfo
 
 logger = logging.getLogger(__name__)
 

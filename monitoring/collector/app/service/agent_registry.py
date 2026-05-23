@@ -1,5 +1,5 @@
 import logging
-from app.models.metrics_schema import AgentInfo
+from app.model.metrics_schema import AgentInfo
 
 logger = logging.getLogger(__name__)
 

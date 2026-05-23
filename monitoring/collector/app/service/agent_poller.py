@@ -2,7 +2,7 @@ import asyncio
 import httpx
 import logging
 from app.core.config import settings
-from app.models.metrics_schema import MetricsSnapshot
+from app.model.metrics_schema import MetricsSnapshot
 from app.db.repository import save_snapshot
 from app.service.agent_registry import agent_registry
 

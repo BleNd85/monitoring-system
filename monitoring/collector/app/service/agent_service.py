@@ -1,7 +1,7 @@
 import httpx
 import logging
 from fastapi import HTTPException
-from app.models.metrics_schema import AgentInfo, AgentRegisterRequest, HostInfo
+from app.model.metrics_schema import AgentInfo, AgentRegisterRequest, HostInfo
 from app.service.agent_registry import agent_registry
 from app.db import repository
 

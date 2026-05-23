@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Query
 from datetime import datetime
 from app.service import metrics_service
-from app.models.metrics_schema import AgentInfo, AgentRegisterRequest
+from app.model.metrics_schema import AgentInfo, AgentRegisterRequest
 from app.service import agent_service
 
 router = APIRouter()
