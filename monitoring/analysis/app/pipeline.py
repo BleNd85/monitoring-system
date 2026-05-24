@@ -33,7 +33,7 @@ async def should_train(agent_id: str) -> bool:
     last = _last_training.get(agent_id)
     if last is None:
         return True
-    return (now - last).total_seconds() > 23 * 3600
+    return (now - last).total_seconds() > settings.RETRAIN_INTERVAL_HOURS * 3600
 
 
 async def run_training(agent_id: str) -> None:
