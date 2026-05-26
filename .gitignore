@@ -1,7 +1,8 @@
 .idea
 .ipynb_checkpoints
 .mypy_cache
-.vscode
+.vscode/*
+!.vscode/extensions.json
 __pycache__
 .pytest_cache
 htmlcov
@@ -22,3 +23,24 @@ venv
 .venv
 docs.zip
 archive.zip
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist-ssr
+*.local
+
+# Editor directories and files
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
