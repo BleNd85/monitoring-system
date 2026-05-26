@@ -16,7 +16,7 @@ async def get_by_agent_id(agent_id: str, limit: int = Query(100, ge=1, le=1000))
     return await incident_service.get_by_agent(agent_id, limit)
 
 
-@router.patch("/incidents/{incident_id}", response_model=IncidentResponse)
+@router.patch("/incidents/{incident_id}/resolve", response_model=IncidentResponse)
 async def resolve(incident_id: UUID):
     return await incident_service.resolve(incident_id)
 
