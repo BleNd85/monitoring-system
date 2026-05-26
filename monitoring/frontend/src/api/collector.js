@@ -16,28 +16,19 @@ const request = async (promise) => {
      }
 }
 
-export const getAgents = async () => {
-     return request(client.get('/agents'))
-}
+export const getAgents = () => request(client.get('/agents'))
 
-export const registerAgent = async (data) => {
-     return request(client.post('/agents', data))
-}
+export const registerAgent = (data) => request(client.post('/agents', data))
 
-export const deleteAgent = async (agentId) => {
-     return request(client.delete(`/agents/${agentId}`))
-}
+export const deleteAgentById = (agentId) => request(client.delete(`/agents/${agentId}`))
 
-export const getLatestMetrics = async (agentId) => {
-     return request(client.get(`/metrics/${agentId}/latest`))
-}
 
-export const getRangeMetrics = async (agentId, start, end) => {
-     return request(client.get(`/metrics/${agentId}/range`, {
+export const getLatestMetricsByAgentId = (agentId) => request(client.get(`/metrics/${agentId}/latest`))
+
+export const getRangeMetricsByAgentId = (agentId, start, end) =>
+     request(client.get(`/metrics/${agentId}/range`, {
           params: {
                start: start.toISOString(),
                end: end.toISOString(),
           }
-     })
-     )
-}
+     }))
