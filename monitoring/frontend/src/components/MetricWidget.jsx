@@ -113,7 +113,7 @@ export default function MetricWidget({ agentId, widgetId, metricKeys = [], onRem
             )}
 
             {metricKeys.length > 0 && !showSettings && (
-                <div className="h-44">
+                <div className="h-44 min-w-0 w-full">
                     {loading
                         ? <div className="h-full flex items-center justify-center">
                             <div className="w-8 h-8 rounded-full border-2 border-orange-500/30 border-t-orange-500 animate-spin" />

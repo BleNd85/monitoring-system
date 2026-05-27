@@ -3,11 +3,13 @@ import {
     Tooltip, Legend, ResponsiveContainer,
 } from 'recharts'
 import { extractMetricValue, METRIC_CONFIG, formatValue } from '../utils/metrics'
+import { useTheme } from '../context/ThemeContext'
 
 const PERCENT_METRICS = ['cpu.load_percent', 'memory.ram_percent', 'memory.swap_percent']
-const MAX_POINTS = 200
 
 export default function MetricsChart({ data, metricKeys }) {
+    const { light } = useTheme()
+
     if (!metricKeys?.length) return null
 
     const ramTotal = (() => {
@@ -18,16 +20,14 @@ export default function MetricsChart({ data, metricKeys }) {
         return null
     })()
 
-    const sliced = data.length > MAX_POINTS
-        ? data.filter((_, i) => i % Math.ceil(data.length / MAX_POINTS) === 0)
-        : data
-
-    const chartData = sliced.map(snapshot => {
+    const chartData = data.map(snapshot => {
+        const date = new Date(snapshot.timestamp)
         const point = {
-            time: new Date(snapshot.timestamp).toLocaleTimeString([], {
+            time: date.toLocaleTimeString([], {
                 hour: '2-digit',
-                minute: '2-digit'
-            })
+                minute: '2-digit',
+                second: '2-digit'
+            }),
         }
         metricKeys.forEach(key => {
             point[key] = extractMetricValue(snapshot, key)
@@ -55,12 +55,27 @@ export default function MetricsChart({ data, metricKeys }) {
         return ['auto', 'auto']
     }
 
+    const tooltip = light
+        ? {
+            bg: '#ffffff',
+            border: 'rgba(0,0,0,0.1)',
+            label: '#1E1E1E',
+            item: '#3A3A3A',
+        }
+        : {
+            bg: '#252525',
+            border: '#3A3A3A',
+            label: '#f3f4f6',
+            item: '#d1d5db',
+        }
+
     return (
         <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData} margin={{ top: 4, right: needsDualAxis ? 56 : 8, bottom: 0, left: 0 }}>
+            <LineChart data={chartData} margin={{ top: 4, right: needsDualAxis ? 0 : 8, bottom: 0, left: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(128,128,128,0.12)" />
                 <XAxis
                     dataKey="time"
+                    tickFormatter={(value) => value.slice(0, 5)}
                     tick={{ fontSize: 10 }}
                     tickLine={false}
                     interval="preserveStartEnd"
@@ -71,7 +86,7 @@ export default function MetricsChart({ data, metricKeys }) {
                     tick={{ fontSize: 10 }}
                     tickLine={false}
                     axisLine={false}
-                    width={52}
+                    width={45}
                     tickFormatter={v => formatValue(v, METRIC_CONFIG[leftKey]?.unit)}
                     domain={getLeftDomain()}
                 />
@@ -82,16 +97,52 @@ export default function MetricsChart({ data, metricKeys }) {
                         tick={{ fontSize: 10 }}
                         tickLine={false}
                         axisLine={false}
-                        width={56}
+                        width={45}
                         tickFormatter={v => formatValue(v, METRIC_CONFIG[rightKey]?.unit)}
                         domain={getRightDomain()}
                     />
                 )}
                 <Tooltip
-                    contentStyle={{ borderRadius: 8, border: '1px solid rgba(128,128,128,0.2)', fontSize: 12 }}
-                    formatter={(v, name) => {
-                        const cfg = METRIC_CONFIG[name]
-                        return [formatValue(v, cfg?.unit), cfg?.label || name]
+                    content={({ active, payload, label }) => {
+                        if (!active || !payload?.length) return null
+                        return (
+                            <div style={{
+                                borderRadius: 8,
+                                border: `1px solid ${tooltip.border}`,
+                                fontSize: 12,
+                                backgroundColor: tooltip.bg,
+                                color: tooltip.label,
+                                padding: '8px 12px',
+                            }}>
+                                <div style={{ marginBottom: 6, color: tooltip.label, fontWeight: 500 }}>
+                                    {label}
+                                </div>
+                                {payload.map(entry => {
+                                    const cfg = METRIC_CONFIG[entry.dataKey]
+                                    return (
+                                        <div key={entry.dataKey} style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: 6,
+                                            marginBottom: 3,
+                                            color: tooltip.item,
+                                        }}>
+                                            <span style={{
+                                                width: 8,
+                                                height: 8,
+                                                borderRadius: '50%',
+                                                backgroundColor: entry.stroke,
+                                                flexShrink: 0,
+                                            }} />
+                                            <span>{cfg?.label || entry.dataKey}:</span>
+                                            <span style={{ fontWeight: 500, color: tooltip.label }}>
+                                                {formatValue(entry.value, cfg?.unit)}
+                                            </span>
+                                        </div>
+                                    )
+                                })}
+                            </div>
+                        )
                     }}
                 />
                 {metricKeys.length > 1 && <Legend wrapperStyle={{ fontSize: 11 }} />}
@@ -102,11 +153,11 @@ export default function MetricsChart({ data, metricKeys }) {
                         type="monotone"
                         dataKey={key}
                         name={key}
-                        stroke={METRIC_CONFIG[key]?.color || '#888'}
+                        stroke={METRIC_CONFIG[key]?.color || '#6B6B6B'}
                         strokeWidth={2}
                         dot={false}
                         activeDot={{ r: 4 }}
-                        isAnimationActive={true}
+                        isAnimationActive={false}
                     />
                 ))}
             </LineChart>
