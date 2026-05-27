@@ -43,12 +43,13 @@ async def get_all_incidents(limit: int = 100) -> list[IncidentRecord]:
 
 async def get_by_agent_id(agent_id: str, limit=100) -> list[IncidentRecord]:
     async with AsyncSessionLocal() as session:
-        result = session.execute(
+        result = await session.execute(
             select(IncidentRecord)
             .where(IncidentRecord.agent_id == agent_id)
             .order_by(desc(IncidentRecord.timestamp))
             .limit(limit)
         )
+        return list(result.scalars().all())
 
 
 async def resolve_incident(incident_id: UUID) -> IncidentRecord | None:
