@@ -56,21 +56,6 @@ services:
       timeout: 5s
       retries: 5
 
-  alerter:
-    build: ./alerter
-    restart: unless-stopped
-    env_file: ./alerter/.env
-    ports:
-      - "8002:8002"
-    depends_on:
-      postgresql:
-        condition: service_healthy
-    healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:8002/api/v1/health" ]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-
   ollama-init:
     image: ollama/ollama
     restart: "no"
@@ -104,18 +89,55 @@ services:
     build: ./analysis
     restart: unless-stopped
     ports:
-      - "8003:8003"
+      - "${ANALYSIS_PORT:-8003}:8003"
     volumes:
       - analysis_models:/app/models
     depends_on:
       collector:
         condition: service_healthy
-      alerter:
-        condition: service_healthy
       ollama:
         condition: service_healthy
     environment:
       OLLAMA_MODEL: ${OLLAMA_MODEL:-gemma3:4b}
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8003/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  alerter:
+    build: ./alerter
+    restart: unless-stopped
+    env_file: ./alerter/.env
+    ports:
+      - "${ALERTER_PORT:-8002}:8002"
+    depends_on:
+      postgresql:
+        condition: service_healthy
+      analysis:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8002/api/v1/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_POLL_INTERVAL: ${POLL_INTERVAL:-10}
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-3000}:80"
+    depends_on:
+      - collector
+      - alerter
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:80" ]
+      interval: 15s
+      timeout: 5s
+      retries: 3
 
 volumes:
   postgresql_data:
