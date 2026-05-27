@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import UUID
 from sqlalchemy import select, desc
 from app.db.database import AsyncSessionLocal, IncidentRecord
@@ -58,7 +58,7 @@ async def resolve_incident(incident_id: UUID) -> IncidentRecord | None:
             record = await session.get(IncidentRecord, incident_id)
             if not record:
                 return None
-            record.resolved_at = datetime.now(datetime.timezone.utc)
+            record.resolved_at = datetime.now(timezone.utc)
             await session.commit()
             await session.refresh(record)
             return record
