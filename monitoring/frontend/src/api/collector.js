@@ -22,8 +22,8 @@ export const registerAgent = (data) => request(client.post('/agents', data))
 
 export const deleteAgentById = (agentId) => request(client.delete(`/agents/${agentId}`))
 
-
-export const getLatestMetricsByAgentId = (agentId) => request(client.get(`/metrics/${agentId}/latest`))
+export const getLatestMetricsByAgentId = (agentId) =>
+     request(client.get(`/metrics/${agentId}/latest`))
 
 export const getRangeMetricsByAgentId = (agentId, start, end) =>
      request(client.get(`/metrics/${agentId}/range`, {

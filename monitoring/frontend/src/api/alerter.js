@@ -19,7 +19,7 @@ const request = async (promise) => {
 export const getIncidents = async (limit = 100) =>
     request(client.get('/incidents', { params: { limit } }))
 
-export const getIncidentByAgentId = async (agent_id, limit = 50) =>
+export const getIncidentsByAgentId = async (agent_id, limit = 50) =>
     request(client.get(`/incidents/${agent_id}`, { params: { limit } }))
 
 export const resolveIncidentById = async (id) =>
