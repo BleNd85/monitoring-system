@@ -8,9 +8,9 @@ logger = logging.getLogger(__name__)
 
 _last_training: dict[str, datetime] = {}
 _last_anomaly: dict[str, datetime] = {}
+_last_analyzed_ts: dict[str, datetime] = {}
 _agents_cache: list = []
 _agents_last_fetch: datetime | None = None
-
 
 AGENTS_REFRESH_INTERVAL = settings.AGENTS_REFRESH_INTERVAL
 ANOMALY_COOLDOWN = settings.ANOMALY_COOLDOWN
@@ -58,16 +58,22 @@ async def run_analysis(agent_id: str) -> None:
     if not snapshot:
         return
 
+    last_ts = _last_analyzed_ts.get(agent_id)
+    if last_ts and snapshot.timestamp <= last_ts:
+        logger.debug("Skipping already analyzed snapshot for agent %s", agent_id)
+        return
+
     now = datetime.now(timezone.utc)
     last_anomaly = _last_anomaly.get(agent_id)
 
     if last_anomaly and (now - last_anomaly).total_seconds() < ANOMALY_COOLDOWN:
         await analyzer.analyze_silent(agent_id, snapshot)
-        return
+    else:
+        detected = await analyzer.analyze(agent_id, snapshot)
+        if detected:
+            _last_anomaly[agent_id] = now
 
-    detected = await analyzer.analyze(agent_id, snapshot)
-    if detected:
-        _last_anomaly[agent_id] = now
+    _last_analyzed_ts[agent_id] = snapshot.timestamp
 
 
 async def _wait_for_agents() -> list:

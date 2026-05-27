@@ -58,7 +58,7 @@ def snapshots_to_df(snapshots: list[MetricsSnapshot]) -> pd.DataFrame:
 def _fit_prophet(df: pd.DataFrame, col: str) -> Prophet:
     model = Prophet(
         daily_seasonality=True,
-        weekly_seasonality=True,
+        weekly_seasonality=False,
         changepoint_prior_scale=0.05,
     )
 
