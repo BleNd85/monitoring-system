@@ -4,23 +4,22 @@ import {
 } from 'recharts'
 import { extractMetricValue, METRIC_CONFIG, formatValue } from '../utils/metrics'
 import { useTheme } from '../context/ThemeContext'
+import { useMemo } from 'react'
 
 const PERCENT_METRICS = ['cpu.load_percent', 'memory.ram_percent', 'memory.swap_percent']
 
 export default function MetricsChart({ data, metricKeys }) {
     const { light } = useTheme()
 
-    if (!metricKeys?.length) return null
-
-    const ramTotal = (() => {
+    const ramTotal = useMemo(() => {
         const last = data[data.length - 1]
         const usage = last?.memory?.ram_usage_mb
         const percent = last?.memory?.ram_percent
         if (usage && percent) return Math.round(usage / (percent / 100))
         return null
-    })()
+    }, [data])
 
-    const chartData = data.map(snapshot => {
+    const chartData = useMemo(() => data.map(snapshot => {
         const date = new Date(snapshot.timestamp)
         const point = {
             time: date.toLocaleTimeString([], {
@@ -29,11 +28,13 @@ export default function MetricsChart({ data, metricKeys }) {
                 second: '2-digit'
             }),
         }
-        metricKeys.forEach(key => {
+        metricKeys?.forEach(key => {
             point[key] = extractMetricValue(snapshot, key)
         })
         return point
-    })
+    }), [data, metricKeys])
+
+    if (!metricKeys?.length) return null
 
     const hasPercent = metricKeys.some(k => PERCENT_METRICS.includes(k))
     const hasAbsolute = metricKeys.some(k => !PERCENT_METRICS.includes(k))
