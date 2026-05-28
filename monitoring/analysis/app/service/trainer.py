@@ -32,6 +32,15 @@ DEVIATION_FEATURES = [
     "swap_percent",
 ]
 
+METRIC_BOUNDS = {
+    "cpu_load_percent": (0.0, 100.0),
+    "ram_percent": (0.0, 100.0),
+    "disk_read_bytes": (0.0, None),
+    "disk_write_bytes": (0.0, None),
+    "net_sent_bytes": (0.0, None),
+    "net_received_bytes": (0.0, None),
+}
+
 
 def snapshots_to_df(snapshots: list[MetricsSnapshot]) -> pd.DataFrame:
     rows = []
@@ -73,15 +82,19 @@ def _get_prophet_predictions(
     df: pd.DataFrame,
     models: dict[str, Prophet],
 ) -> pd.DataFrame:
-
     future = pd.DataFrame({"ds": df["timestamp"]})
-
     result = {}
-
     for col, model in models.items():
         forecast = model.predict(future)
-        result[f"expected_{col}"] = forecast["yhat"].values
-
+        values = forecast["yhat"].values.copy()
+        bounds = METRIC_BOUNDS.get(col)
+        if bounds:
+            lo, hi = bounds
+            if lo is not None:
+                values = np.maximum(lo, values)
+            if hi is not None:
+                values = np.minimum(hi, values)
+        result[f"expected_{col}"] = values
     return pd.DataFrame(result, index=df.index)
 
 

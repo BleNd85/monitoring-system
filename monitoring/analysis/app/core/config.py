@@ -12,12 +12,12 @@ class Settings(BaseSettings):
     ANOMALY_COOLDOWN: int = 60
     RETRAIN_INTERVAL_HOURS: int = 23
 
-    TRAINING_WINDOW_HOURS: int = 24
-    MIN_TRAINING_SAMPLES: int = 5000
+    TRAINING_WINDOW_HOURS: int = 72
+    MIN_TRAINING_SAMPLES: int = 11500
 
-    ANOMALY_THRESHOLD_WARNING: float = 0.70
-    ANOMALY_THRESHOLD_CRITICAL: float = 0.80
-    ISO_CONTAMINATION: float = 0.03
+    ANOMALY_THRESHOLD_WARNING: float = 0.80
+    ANOMALY_THRESHOLD_CRITICAL: float = 0.90
+    ISO_CONTAMINATION: float = 0.05
 
     MODELS_DIR: str = "/app/models"
     API_V1_STR: str = "/api/v1"

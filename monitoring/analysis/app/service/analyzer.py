@@ -4,18 +4,10 @@ import pandas as pd
 from datetime import datetime
 from app.model.schema import MetricsSnapshot, AnomalyDetected
 from app.service import model_manager, llm_service, alerter_client
+from app.service.trainer import METRIC_BOUNDS, PROPHET_TARGETS
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
-
-PROPHET_TARGETS = [
-    "cpu_load_percent",
-    "ram_percent",
-    "disk_read_bytes",
-    "disk_write_bytes",
-    "net_sent_bytes",
-    "net_received_bytes",
-]
 
 DEVIATION_FEATURES = [
     "dev_cpu_load_percent",
@@ -61,7 +53,15 @@ def get_expected_values(agent_id: str, timestamp: datetime) -> dict:
         model = model_manager.load_model(agent_id, f"prophet_{col}")
         if model:
             forecast = model.predict(future)
-            expected[col] = round(float(forecast["yhat"].iloc[0]), 4)
+            value = float(forecast["yhat"].iloc[0])
+            bounds = METRIC_BOUNDS.get(col)
+            if bounds:
+                lo, hi = bounds
+                if lo is not None:
+                    value = max(lo, value)
+                if hi is not None:
+                    value = min(hi, value)
+            expected[col] = round(value, 4)
     return expected
 
 
