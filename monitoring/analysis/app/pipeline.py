@@ -14,6 +14,7 @@ _agents_last_fetch: datetime | None = None
 
 AGENTS_REFRESH_INTERVAL = settings.AGENTS_REFRESH_INTERVAL
 ANOMALY_COOLDOWN = settings.ANOMALY_COOLDOWN
+TRAINING_HOURS = settings.TRAINING_WINDOW_HOURS
 
 
 async def get_agents_cached() -> list:
@@ -38,7 +39,7 @@ async def should_train(agent_id: str) -> bool:
 
 async def run_training(agent_id: str) -> None:
     now = datetime.now(timezone.utc)
-    start = now - timedelta(hours=24)
+    start = now - timedelta(hours=TRAINING_HOURS)
     logger.info("Starting training for agent %s", agent_id)
     snapshots = await collector_client.get_range(agent_id, start, now)
     if not snapshots:

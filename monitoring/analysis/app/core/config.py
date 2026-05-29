@@ -13,11 +13,11 @@ class Settings(BaseSettings):
     RETRAIN_INTERVAL_HOURS: int = 23
 
     TRAINING_WINDOW_HOURS: int = 72
-    MIN_TRAINING_SAMPLES: int = 11500
+    MIN_TRAINING_SAMPLES: int = 13000
 
     ANOMALY_THRESHOLD_WARNING: float = 0.80
     ANOMALY_THRESHOLD_CRITICAL: float = 0.90
-    ISO_CONTAMINATION: float = 0.05
+    ISO_CONTAMINATION: float = 0.03
 
     MODELS_DIR: str = "/app/models"
     API_V1_STR: str = "/api/v1"
