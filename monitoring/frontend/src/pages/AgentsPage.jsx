@@ -67,7 +67,13 @@ export default function AgentsPage() {
                 </div>
             ) : (
                 <div className="flex flex-col gap-4">
-                    {agents.map(a => <AgentCard key={a.agent_id} agent={a} />)}
+                    {agents.map(a => (
+                        <AgentCard
+                            key={a.agent_id}
+                            agent={a}
+                            onDeleted={(id) => setAgents(prev => prev.filter(a => a.agent_id !== id))}
+                        />
+                    ))}
                 </div>
             )}
         </div>
