@@ -15,9 +15,9 @@ class Settings(BaseSettings):
     TRAINING_WINDOW_HOURS: int = 72
     MIN_TRAINING_SAMPLES: int = 13000
 
-    ANOMALY_THRESHOLD_WARNING: float = 0.80
-    ANOMALY_THRESHOLD_CRITICAL: float = 0.90
-    ISO_CONTAMINATION: float = 0.03
+    ANOMALY_THRESHOLD_WARNING: float = 0.75
+    ANOMALY_THRESHOLD_CRITICAL: float = 0.85
+    ISO_CONTAMINATION: float = 0.02
 
     MODELS_DIR: str = "/app/models"
     API_V1_STR: str = "/api/v1"
