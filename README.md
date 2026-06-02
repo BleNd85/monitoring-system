@@ -90,7 +90,7 @@ Runs all backend services, the ML pipeline, and the frontend.
 | `ANOMALY_COOLDOWN` | `60` | Minimum interval between alerts for the same agent in seconds |
 | `RETRAIN_INTERVAL_HOURS` | `23` | Automatic model retraining interval in hours |
 | `TRAINING_WINDOW_HOURS` | `72` | Historical data window size for training in hours |
-| `MIN_TRAINING_SAMPLES` | `13000` | Minimum number of records required to start training |
+| `MIN_TRAINING_SAMPLES` | `15000` | Minimum number of records required to start training |
 | `ANOMALY_THRESHOLD_WARNING` | `0.75` | Normalized score threshold for warning level |
 | `ANOMALY_THRESHOLD_CRITICAL` | `0.85` | Normalized score threshold for critical level |
 | `ISO_CONTAMINATION` | `0.01` | Expected anomaly fraction in the Isolation Forest training set |
