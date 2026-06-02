@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import patch, MagicMock, AsyncMock
+from unittest.mock import patch, MagicMock
 from app.service.metrics_service import collect_host_info, collect_metrics, _cpu_percent
 
 
